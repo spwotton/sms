@@ -4,10 +4,9 @@ Database Models Module
 Defines SQLAlchemy models for the SMS Hub application:
 - Contact: Store contact information with priority and relationship
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Enum
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 import enum
 
 Base = declarative_base()
@@ -56,8 +55,8 @@ class Contact(Base):
     phone = Column(String(20), nullable=False, unique=True, index=True)
     priority = Column(Enum(PriorityLevel), default=PriorityLevel.MEDIUM, index=True)
     relationship = Column(Enum(RelationshipType), default=RelationshipType.OTHER)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     def to_dict(self):
         """Convert model to dictionary"""
@@ -101,7 +100,7 @@ class Message(Base):
     direction = Column(Enum('inbound', 'outbound', name='direction_enum'), nullable=False)
     status = Column(Enum('pending', 'sent', 'delivered', 'failed', name='status_enum'), default='pending')
     classification = Column(Enum('stable', 'critical', name='classification_enum'), default='stable')
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     
     def to_dict(self):
         """Convert model to dictionary"""
