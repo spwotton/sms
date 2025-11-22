@@ -126,6 +126,7 @@ def register_routes(app):
     @jwt_required()
     def get_contacts():
         """Get all contacts"""
+        session = None
         try:
             session = app.db_session()
             contacts = session.query(Contact).all()
@@ -135,11 +136,15 @@ def register_routes(app):
         except Exception as e:
             logger.error(f"Error fetching contacts: {str(e)}")
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
     
     @app.route('/api/contacts/<int:contact_id>', methods=['GET'])
     @jwt_required()
     def get_contact(contact_id):
         """Get a specific contact by ID"""
+        session = None
         try:
             session = app.db_session()
             contact = session.query(Contact).filter_by(id=contact_id).first()
@@ -149,6 +154,9 @@ def register_routes(app):
         except Exception as e:
             logger.error(f"Error fetching contact: {str(e)}")
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
     
     @app.route('/api/contacts', methods=['POST'])
     @jwt_required()
@@ -164,6 +172,7 @@ def register_routes(app):
             "relationship": "parent"
         }
         """
+        session = None
         try:
             data = request.get_json()
             session = app.db_session()
@@ -190,16 +199,23 @@ def register_routes(app):
             
             return jsonify(contact.to_dict()), 201
         except ValueError as e:
+            if session:
+                session.rollback()
             return jsonify({'error': f'Invalid value: {str(e)}'}), 400
         except Exception as e:
             logger.error(f"Error creating contact: {str(e)}")
-            session.rollback()
+            if session:
+                session.rollback()
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
     
     @app.route('/api/contacts/<int:contact_id>', methods=['PUT'])
     @jwt_required()
     def update_contact(contact_id):
         """Update an existing contact"""
+        session = None
         try:
             data = request.get_json()
             session = app.db_session()
@@ -228,16 +244,23 @@ def register_routes(app):
             session.commit()
             return jsonify(contact.to_dict()), 200
         except ValueError as e:
+            if session:
+                session.rollback()
             return jsonify({'error': f'Invalid value: {str(e)}'}), 400
         except Exception as e:
             logger.error(f"Error updating contact: {str(e)}")
-            session.rollback()
+            if session:
+                session.rollback()
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
     
     @app.route('/api/contacts/<int:contact_id>', methods=['DELETE'])
     @jwt_required()
     def delete_contact(contact_id):
         """Delete a contact"""
+        session = None
         try:
             session = app.db_session()
             contact = session.query(Contact).filter_by(id=contact_id).first()
@@ -249,8 +272,12 @@ def register_routes(app):
             return jsonify({'message': 'Contact deleted successfully'}), 200
         except Exception as e:
             logger.error(f"Error deleting contact: {str(e)}")
-            session.rollback()
+            if session:
+                session.rollback()
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
     
     # SMS endpoints
     @app.route('/api/sms/send', methods=['POST'])
@@ -266,6 +293,7 @@ def register_routes(app):
             "from": "+0987654321" (optional)
         }
         """
+        session = None
         try:
             data = request.get_json()
             
@@ -309,7 +337,12 @@ def register_routes(app):
             
         except Exception as e:
             logger.error(f"Error sending SMS: {str(e)}")
+            if session:
+                session.rollback()
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
     
     @app.route('/api/messages', methods=['GET'])
     @jwt_required()
@@ -323,6 +356,7 @@ def register_routes(app):
         - classification: Filter by classification (critical/stable)
         - limit: Number of messages to return (default: 100)
         """
+        session = None
         try:
             session = app.db_session()
             query = session.query(Message)
@@ -352,11 +386,15 @@ def register_routes(app):
         except Exception as e:
             logger.error(f"Error fetching messages: {str(e)}")
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
     
     @app.route('/api/messages/<int:message_id>', methods=['GET'])
     @jwt_required()
     def get_message(message_id):
         """Get a specific message by ID"""
+        session = None
         try:
             session = app.db_session()
             message = session.query(Message).filter_by(id=message_id).first()
@@ -366,6 +404,9 @@ def register_routes(app):
         except Exception as e:
             logger.error(f"Error fetching message: {str(e)}")
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
     
     # Jasmin Gateway status endpoints
     @app.route('/api/gateway/balance', methods=['GET'])
@@ -395,6 +436,7 @@ def register_routes(app):
     @jwt_required()
     def get_stats():
         """Get system statistics"""
+        session = None
         try:
             session = app.db_session()
             
@@ -412,6 +454,9 @@ def register_routes(app):
         except Exception as e:
             logger.error(f"Error fetching stats: {str(e)}")
             return jsonify({'error': str(e)}), 500
+        finally:
+            if session:
+                session.close()
 
 
 if __name__ == '__main__':

@@ -31,4 +31,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
   CMD python -c "import requests; requests.get('http://localhost:5000/api/health')" || exit 1
 
 # Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:create_app()"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "wsgi:app"]
