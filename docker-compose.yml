@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: sms_hub_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-sms_hub}
+      MYSQL_USER: ${DB_USER:-sms_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-sms_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - sms_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flask API Application
+  api:
+    build: .
+    container_name: sms_hub_api
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - FLASK_DEBUG=${FLASK_DEBUG:-False}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-sms_user}
+      - DB_PASSWORD=${DB_PASSWORD:-sms_password}
+      - DB_NAME=${DB_NAME:-sms_hub}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-this-secret-key}
+      - SECRET_KEY=${SECRET_KEY:-change-this-flask-secret}
+      - JASMIN_API_URL=${JASMIN_API_URL:-http://jasmin:8080}
+      - JASMIN_API_USERNAME=${JASMIN_API_USERNAME:-admin}
+      - JASMIN_API_PASSWORD=${JASMIN_API_PASSWORD:-password}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-pro}
+      - AI_PROVIDER=${AI_PROVIDER:-openai}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - sms_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Jasmin SMS Gateway (optional - requires GSM modem)
+  # Uncomment if you have a GSM modem configured
+  # jasmin:
+  #   image: jookies/jasmin:latest
+  #   container_name: sms_hub_jasmin
+  #   restart: always
+  #   ports:
+  #     - "8080:8080"  # REST API
+  #     - "2775:2775"  # SMPP
+  #     - "8990:8990"  # HTTP API
+  #   volumes:
+  #     - jasmin_config:/etc/jasmin
+  #     - jasmin_logs:/var/log/jasmin
+  #   networks:
+  #     - sms_network
+
+networks:
+  sms_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  # jasmin_config:
+  # jasmin_logs:
