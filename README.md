@@ -378,3 +378,51 @@ The MySQL-based Ψ-Coherence Hub now delivers a secure, performant, and maintain
 
 ---  
 **Document End**
+
+## Quickstart (Flask SMS Hub)
+
+This repository now includes a lightweight Flask implementation of the family SMS hub described above. Key capabilities:
+
+- JWT-protected endpoints with rate limiting (10/minute by default).
+- Heuristic message stabilization with optional LLM handoff (OpenAI/Gemini).
+- Parameterized MySQL-ready queries for contact lookup and message queueing.
+- Jasmin Gateway dispatch stub using an in-memory queue for local testing.
+
+### MySQL Environment Variables
+
+Set these variables for a real MySQL deployment:
+
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+- `SECRET_KEY` (JWT signing), `SYSTEM_USERNAME`, `SYSTEM_PASSWORD`
+- `OPENAI_API_KEY`, `GEMINI_API_KEY` (optional LLM integrations)
+
+### Running with Docker
+
+```bash
+docker build -t sms-hub .
+docker run -p 5000:5000 \
+  -e DB_HOST=mysql \
+  -e DB_USER=sms_user \
+  -e DB_PASSWORD=secret \
+  -e DB_NAME=sms_hub \
+  -e SECRET_KEY=supersecret \
+  -e SYSTEM_USERNAME=family-admin \
+  -e SYSTEM_PASSWORD=change-me \
+  sms-hub
+```
+
+### Core Endpoints
+
+- `POST /api/token` – obtain JWT using `username`/`password` body.
+- `POST /api/process` – body `{ "text": "..." }` → classification + stabilized text.
+- `GET /api/contacts` – query params `priority`, `relationship` to filter.
+- `POST /api/send` – body `{ "phone": "+15551234567", "message": "..." }` to queue via Jasmin stub.
+- `GET /health` – health probe.
+
+### Tests
+
+Run unit tests with:
+
+```bash
+pytest
+```
