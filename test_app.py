@@ -240,10 +240,10 @@ def test_invalid_priority_value(client, auth_headers):
 
 def test_missing_required_fields(client, auth_headers):
     """Test that missing required fields are rejected"""
+    # Phone field is intentionally missing
     response = client.post('/api/contacts', 
         headers=auth_headers,
         json={
             'name': 'Test User'
-            # Missing phone
         })
     assert response.status_code == 400
